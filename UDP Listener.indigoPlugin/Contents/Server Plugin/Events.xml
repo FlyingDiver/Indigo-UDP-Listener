@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<Events>
+    <Event id="messageReceived">
+        <Name>UDP Message Received</Name>
+		<ConfigUI>
+        	<Field id="udpDevice" type="menu">
+            	<Label>UDP Device:</Label>
+            	<List class="self" filter="" method="pickUDPDevice" dynamicReload="true"/>
+			</Field>
+		</ConfigUI>
+    </Event>
+</Events>
+
+

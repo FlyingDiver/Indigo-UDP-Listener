@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Devices>
+    <Device type="custom" id="udpListener">
+        <Name>UDP Listener</Name>
+        <ConfigUI>
+            <Field id="udpPort" type="textfield" defaultValue="">
+                <Label>UDP Port:</Label>
+            </Field>
+        </ConfigUI>
+        <States>
+            <State id="lastIP">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Last IP</TriggerLabel>
+                <ControlPageLabel>Last IP</ControlPageLabel>
+            </State>
+            <State id="lastPort">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Last Port</TriggerLabel>
+                <ControlPageLabel>Last Port</ControlPageLabel>
+            </State>
+            <State id="lastMessage">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Last Message</TriggerLabel>
+                <ControlPageLabel>Last Message</ControlPageLabel>
+            </State>
+        </States>
+    </Device>
+</Devices>
