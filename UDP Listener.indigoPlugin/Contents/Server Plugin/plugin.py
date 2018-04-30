@@ -50,11 +50,19 @@ class Plugin(indigo.PluginBase):
         assert trigger.id in self.triggers
         del self.triggers[trigger.id]
 
-    def triggerCheck(self):
+    def triggerCheck(self, device):
         for triggerId, trigger in sorted(self.triggers.iteritems()):
             self.logger.debug("Checking Trigger %s (%s), Type: %s" % (trigger.name, trigger.id, trigger.pluginTypeId))
-            if trigger.pluginTypeId == 'requestReceived':
-                indigo.trigger.execute(trigger)
+
+            if trigger.pluginTypeId == 'messageReceived':
+
+                if (trigger.pluginProps["udpDevice"] == str(device.id)) or (trigger.pluginProps["udpDevice"] == kAnyDevice):
+                    indigo.trigger.execute(trigger)
+                else:
+                    self.logger.debug("\t\tSkipping Trigger %s (%s), wrong device: %s" % (trigger.name, trigger.id, device.id))
+                
+            else:
+                self.logger.debug("\tUnknown Trigger Type %s (%d), %s" % (trigger.name, trigger.id, trigger.pluginTypeId))
 
 
     ####################
@@ -103,7 +111,7 @@ class Plugin(indigo.PluginBase):
                                         {'key':'lastMessage',   'value':data}
                             ]
                             device.updateStatesOnServer(stateList)
-    
+                            self.triggerCheck(device)
 
         except self.StopThread:
             pass
@@ -182,7 +190,7 @@ class Plugin(indigo.PluginBase):
     def pickUDPDevice(self, filter=None, valuesDict=None, typeId=0, targetId=0):
         retList =[(kAnyDevice, "Any")]
         for dev in indigo.devices.iter("self"):
-            if (dev.deviceTypeId == "udpDevice"):
+            if (dev.deviceTypeId == "udpListener"):
                 retList.append((dev.id,dev.name))
         retList.sort(key=lambda tup: tup[1])
         return retList
