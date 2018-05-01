@@ -98,7 +98,7 @@ class Plugin(indigo.PluginBase):
                     for devID, sock in self.listenerDict.items():
                         device = indigo.devices[devID]
                         try:
-                            data, addr = sock.recvfrom(1024)
+                            data, addr = sock.recvfrom(2048)
                         except socket.timeout, e:
                             self.logger.threaddebug(u"{}: UDP timeout".format(device.name))
                         except socket.error, e:
@@ -112,6 +112,7 @@ class Plugin(indigo.PluginBase):
                             ]
                             device.updateStatesOnServer(stateList)
                             self.triggerCheck(device)
+                    self.sleep(0.01)
 
         except self.StopThread:
             pass
@@ -120,8 +121,6 @@ class Plugin(indigo.PluginBase):
     # Called for each enabled Device belonging to plugin
     #
     def deviceStartComm(self, device):
-        self.logger.debug(u'Called deviceStartComm(self, device): %s (%s)' % (device.name, device.id))
-
         instanceVers = int(device.pluginProps.get('devVersCount', 0))
         self.logger.debug(device.name + u": Device Current Version = " + str(instanceVers))
 
@@ -153,10 +152,9 @@ class Plugin(indigo.PluginBase):
 
 
     ########################################
-    # Terminate communication with servers
+    # Terminate communication
     #
     def deviceStopComm(self, device):
-
         if device.id in self.listenerDict:
             self.logger.debug(u"{}: Stopping device".format(device.name))
             self.listenerDict[device.id].close()

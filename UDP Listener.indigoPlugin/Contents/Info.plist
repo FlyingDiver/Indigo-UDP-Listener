@@ -9,9 +9,9 @@
 	<key>IwsApiVersion</key>
 	<string>1.0.0</string>
 	<key>CFBundleName</key>
-	<string>UDL Listener</string>
+	<string>UDP Listener</string>
 	<key>CFBundleDisplayName</key>
-	<string>UDL Listener</string>
+	<string>UDP Listener</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.flyingdiver.indigoplugin.udp-listener</string>
 	<key>CFBundleVersion</key>
