@@ -6,6 +6,15 @@
             <Field id="udpPort" type="textfield" defaultValue="">
                 <Label>UDP Port:</Label>
             </Field>
+            <Field id="udpPortNote" type="label" fontSize="small" fontColor="darkgray">
+                <Label>Required.</Label>
+            </Field>
+            <Field id="multiGroup" type="textfield" defaultValue="">
+                <Label>Multicast Group:</Label>
+            </Field>
+            <Field id="multiGroupNote" type="label" fontSize="small" fontColor="darkgray">
+                <Label>Optional.  Leave blank for non-multicast devices.</Label>
+            </Field>
         </ConfigUI>
         <States>
             <State id="lastIP">

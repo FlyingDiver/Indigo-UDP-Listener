@@ -4,6 +4,7 @@
 
 import logging
 import socket
+import struct
 
 kCurDevVersCount = 0        # current version of plugin devices
 kAnyDevice      = "ANYDEVICE"
@@ -104,7 +105,11 @@ class Plugin(indigo.PluginBase):
                         except socket.error, e:
                             self.logger.error(u"{}: Socket Error: {}".format(device.name, e))
                         else:
-                            self.logger.debug(u"{}: UDP msg from: {}, data: {}".format(device.name, addr, unicode(data)))
+                            try:
+                                self.logger.debug(u"{}: UDP msg from: {}, data: {}".format(device.name, addr, data.decode('utf-8')))
+                            except:
+                                self.logger.debug(u"{}: UDP msg from: {}, data: {}".format(device.name, addr, ":".join("{:02x}".format(ord(c)) for c in data)))
+                            
                             stateList = [
                                         {'key':'lastIP',        'value':addr[0]},
                                         {'key':'lastPort',      'value':addr[1]},
@@ -140,9 +145,14 @@ class Plugin(indigo.PluginBase):
 
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s.bind((UDP_IP, int(device.pluginProps['udpPort'])))
                 s.settimeout(0.1)
+                s.bind((UDP_IP, int(device.pluginProps['udpPort'])))
 
+                if len(device.pluginProps['multiGroup']) > 0:                       # multicast group specified
+                    group = socket.inet_aton(device.pluginProps['multiGroup'])
+                    mreq = struct.pack('4sL', group, socket.INADDR_ANY)
+                    s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+                
                 self.listenerDict[device.id] = s
                 
             else:
