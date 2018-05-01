@@ -100,11 +100,11 @@ class Plugin(indigo.PluginBase):
                         try:
                             data, addr = sock.recvfrom(2048)
                         except socket.timeout, e:
-                            self.logger.threaddebug(u"{}: UDP timeout".format(device.name))
+                            continue
                         except socket.error, e:
                             self.logger.error(u"{}: Socket Error: {}".format(device.name, e))
                         else:
-                            self.logger.debug(u"{}: UDP msg from: {}, data: {}".format(device.name, addr, data))
+                            self.logger.debug(u"{}: UDP msg from: {}, data: {}".format(device.name, addr, unicode(data)))
                             stateList = [
                                         {'key':'lastIP',        'value':addr[0]},
                                         {'key':'lastPort',      'value':addr[1]},
