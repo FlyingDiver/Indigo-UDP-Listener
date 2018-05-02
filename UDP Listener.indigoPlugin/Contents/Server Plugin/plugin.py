@@ -106,14 +106,15 @@ class Plugin(indigo.PluginBase):
                             self.logger.error(u"{}: Socket Error: {}".format(device.name, e))
                         else:
                             try:
-                                self.logger.debug(u"{}: UDP msg from: {}, data: {}".format(device.name, addr, data.decode('utf-8')))
+                                message = data.decode('utf-8')
                             except:
-                                self.logger.debug(u"{}: UDP msg from: {}, data: {}".format(device.name, addr, ":".join("{:02x}".format(ord(c)) for c in data)))
+                                message = ":".join("{:02x}".format(ord(c)) for c in data)
+                            self.logger.debug(u"{}: UDP msg from: {}, data: {}".format(device.name, addr, message))
                             
                             stateList = [
                                         {'key':'lastIP',        'value':addr[0]},
                                         {'key':'lastPort',      'value':addr[1]},
-                                        {'key':'lastMessage',   'value':data}
+                                        {'key':'lastMessage',   'value':message}
                             ]
                             device.updateStatesOnServer(stateList)
                             self.triggerCheck(device)
