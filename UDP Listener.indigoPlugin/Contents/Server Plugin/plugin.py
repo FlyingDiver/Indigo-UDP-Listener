@@ -33,7 +33,7 @@ class Plugin(indigo.PluginBase):
         indigo.server.log(u"Starting UDP Listener")
         
         self.triggers = {}
-        self.listenerDict = dict()
+        self.listeners = {}
 
     def shutdown(self):
         indigo.server.log(u"Shutting down UDP Listener")
@@ -92,11 +92,11 @@ class Plugin(indigo.PluginBase):
         try:
             while True:
             
-                if len(self.listenerDict) == 0: # if no listener devices, just sleep a bit
+                if len(self.listeners) == 0: # if no listener devices, just sleep a bit
                     self.sleep(1)
                 
                 else:
-                    for devID, sock in self.listenerDict.items():
+                    for devID, sock in self.listeners.items():
                         device = indigo.devices[devID]
                         try:
                             data, addr = sock.recvfrom(2048)
@@ -128,19 +128,19 @@ class Plugin(indigo.PluginBase):
     #
     def deviceStartComm(self, device):
         instanceVers = int(device.pluginProps.get('devVersCount', 0))
-        self.logger.debug(device.name + u": Device Current Version = " + str(instanceVers))
+        self.logger.threaddebug(device.name + u": Device Current Version = " + str(instanceVers))
 
         if instanceVers >= kCurDevVersCount:
-            self.logger.debug(device.name + u": Device Version is up to date")
+            self.logger.threaddebug(device.name + u": Device Version is up to date")
 
         elif instanceVers < kCurDevVersCount:
             newProps = device.pluginProps
 
         else:
-            self.logger.warning(u"Unknown device version: " + str(instanceVers) + " for device " + device.name)
+            self.logger.warning(u"{}: Unknown device version: ".format(device.name, instanceVers))
 
-        if device.id not in self.listenerDict:
-            self.logger.debug(u"{}: Starting device ({})".format(device.name, device.deviceTypeId))
+        if device.id not in self.listeners:
+            self.logger.debug(u"{}: Starting {} device ({})".format(device.name, device.deviceTypeId, device.id))
 
             if device.deviceTypeId == "udpListener":
 
@@ -154,22 +154,21 @@ class Plugin(indigo.PluginBase):
                     mreq = struct.pack('4sL', group, socket.INADDR_ANY)
                     s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
                 
-                self.listenerDict[device.id] = s
+                self.listeners[device.id] = s
                 
             else:
                 self.logger.error(u"{}: Unknown device type: {}".format(device.name, device.deviceTypeId))
         else:
-            self.logger.debug(device.name + u": Duplicate Device ID")
-
+            self.logger.debug(u"{}: Duplicate Device ID ({})".format(device.name, device.id))
 
     ########################################
     # Terminate communication
     #
     def deviceStopComm(self, device):
-        if device.id in self.listenerDict:
-            self.logger.debug(u"{}: Stopping device".format(device.name))
-            self.listenerDict[device.id].close()
-            del self.listenerDict[device.id]
+        if device.id in self.listeners:
+            self.logger.debug(u"{}: Stopping {} device ({})".format(device.name, device.deviceTypeId, device.id))
+            self.listeners[device.id].close()
+            del self.listeners[device.id]
         else:
             self.logger.debug(u"{}: Unknown Device ID: {}".format(device.name, device.id))
         
