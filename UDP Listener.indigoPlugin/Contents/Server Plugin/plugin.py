@@ -8,7 +8,7 @@ import struct
 
 kCurDevVersCount = 0        # current version of plugin devices
 kAnyDevice      = "ANYDEVICE"
-UDP_IP = '' ## All destination IP's
+UDP_IP = ''  # All destination IP's
 
 class Plugin(indigo.PluginBase):
 
@@ -21,69 +21,51 @@ class Plugin(indigo.PluginBase):
         pfmt = logging.Formatter('%(asctime)s.%(msecs)03d\t[%(levelname)8s] %(name)20s.%(funcName)-25s%(msg)s', datefmt='%Y-%m-%d %H:%M:%S')
         self.plugin_file_handler.setFormatter(pfmt)
 
-        try:
-            self.logLevel = int(self.pluginPrefs[u"logLevel"])
-        except:
-            self.logLevel = logging.INFO
+        self.logLevel = int(self.pluginPrefs.get("logLevel", logging.INFO))
         self.indigo_log_handler.setLevel(self.logLevel)
-        self.logger.debug(u"logLevel = " + str(self.logLevel))
+        self.logger.debug(f"logLevel = {self.logLevel}")
 
-
-    def startup(self):
-        indigo.server.log(u"Starting UDP Listener")
-        
         self.triggers = {}
         self.listeners = {}
 
-    def shutdown(self):
-        indigo.server.log(u"Shutting down UDP Listener")
+    @staticmethod
+    def startup():
+        indigo.server.log("Starting UDP Listener")
 
+    @staticmethod
+    def shutdown():
+        indigo.server.log("Shutting down UDP Listener")
 
     ####################
 
     def triggerStartProcessing(self, trigger):
-        self.logger.debug("Adding Trigger %s (%d) - %s" % (trigger.name, trigger.id, trigger.pluginTypeId))
+        self.logger.debug(f"Adding Trigger {trigger.name} ({trigger.id}) - {trigger.pluginTypeId}")
         assert trigger.id not in self.triggers
         self.triggers[trigger.id] = trigger
 
     def triggerStopProcessing(self, trigger):
-        self.logger.debug("Removing Trigger %s (%d)" % (trigger.name, trigger.id))
+        self.logger.debug(f"Removing Trigger {trigger.name} ({trigger.id})")
         assert trigger.id in self.triggers
         del self.triggers[trigger.id]
 
     def triggerCheck(self, device):
-        for triggerId, trigger in sorted(self.triggers.iteritems()):
-            self.logger.debug("Checking Trigger %s (%s), Type: %s" % (trigger.name, trigger.id, trigger.pluginTypeId))
+        for triggerId, trigger in sorted(self.triggers.items()):
+            self.logger.debug(f"Checking Trigger {trigger.name} ({trigger.id}), Type: {trigger.pluginTypeId}")
 
             if trigger.pluginTypeId == 'messageReceived':
-
                 if (trigger.pluginProps["udpDevice"] == str(device.id)) or (trigger.pluginProps["udpDevice"] == kAnyDevice):
                     indigo.trigger.execute(trigger)
                 else:
-                    self.logger.debug("\t\tSkipping Trigger %s (%s), wrong device: %s" % (trigger.name, trigger.id, device.id))
-                
+                    self.logger.debug(f"\t\tSkipping Trigger {trigger.name} ({trigger.id}), wrong device: {device.id}")
             else:
-                self.logger.debug("\tUnknown Trigger Type %s (%d), %s" % (trigger.name, trigger.id, trigger.pluginTypeId))
-
-
-    ####################
-    def validatePrefsConfigUi(self, valuesDict):
-        self.logger.debug(u"validatePrefsConfigUi called")
-        errorDict = indigo.Dict()
-
-        if len(errorDict) > 0:
-            return (False, valuesDict, errorDict)
-        return (True, valuesDict)
+                self.logger.debug(f"\tUnknown Trigger Type {trigger.name} ({trigger.id:d}), {trigger.pluginTypeId}")
 
     ########################################
     def closedPrefsConfigUi(self, valuesDict, userCancelled):
         if not userCancelled:
-            try:
-                self.logLevel = int(valuesDict[u"logLevel"])
-            except:
-                self.logLevel = logging.INFO
+            self.logLevel = int(valuesDict.get("logLevel", logging.INFO))
             self.indigo_log_handler.setLevel(self.logLevel)
-            self.logger.debug(u"logLevel = " + str(self.logLevel))
+            self.logger.debug(f"logLevel = {self.logLevel}")
 
     ########################################
 
@@ -92,24 +74,25 @@ class Plugin(indigo.PluginBase):
         try:
             while True:
             
-                if len(self.listeners) == 0: # if no listener devices, just sleep a bit
+                if len(self.listeners) == 0:  # if no listener devices, just sleep a bit
                     self.sleep(1)
                 
                 else:
-                    for devID, sock in self.listeners.items():
+                    for devID in list(self.listeners):
                         device = indigo.devices[devID]
+                        sock = self.listeners[device.id]
                         try:
                             data, addr = sock.recvfrom(2048)
-                        except socket.timeout, e:
+                        except socket.timeout as e:
                             continue
-                        except socket.error, e:
-                            self.logger.error(u"{}: Socket Error: {}".format(device.name, e))
+                        except socket.error as e:
+                            self.logger.error(f"{device.name}: Socket Error: {e}")
                         else:
                             try:
                                 message = data.decode('utf-8')
-                            except:
-                                message = ":".join("{:02x}".format(ord(c)) for c in data)
-                            self.logger.debug(u"{}: UDP msg from: {}, data: {}".format(device.name, addr, message))
+                            except (Exception, ):
+                                message = ":".join(f"{ord(c):02x}" for c in data)
+                            self.logger.debug(f"{device.name}: UDP msg from: {addr}, data: {message}")
                             
                             stateList = [
                                         {'key':'lastIP',        'value':addr[0]},
@@ -128,19 +111,19 @@ class Plugin(indigo.PluginBase):
     #
     def deviceStartComm(self, device):
         instanceVers = int(device.pluginProps.get('devVersCount', 0))
-        self.logger.threaddebug(device.name + u": Device Current Version = " + str(instanceVers))
+        self.logger.threaddebug(f"{device.name }: Device Current Version = {instanceVers}")
 
         if instanceVers >= kCurDevVersCount:
-            self.logger.threaddebug(device.name + u": Device Version is up to date")
+            self.logger.threaddebug(f'{device.name}: Device Version is up to date')
 
         elif instanceVers < kCurDevVersCount:
             newProps = device.pluginProps
 
         else:
-            self.logger.warning(u"{}: Unknown device version: ".format(device.name, instanceVers))
+            self.logger.warning(f"{device.name}: Unknown device version: ")
 
         if device.id not in self.listeners:
-            self.logger.debug(u"{}: Starting {} device ({})".format(device.name, device.deviceTypeId, device.id))
+            self.logger.debug(f"{device.name}: Starting {device.deviceTypeId} device ({device.id})")
 
             if device.deviceTypeId == "udpListener":
 
@@ -157,51 +140,29 @@ class Plugin(indigo.PluginBase):
                 self.listeners[device.id] = s
                 
             else:
-                self.logger.error(u"{}: Unknown device type: {}".format(device.name, device.deviceTypeId))
+                self.logger.error(f"{device.name}: Unknown device type: {device.deviceTypeId}")
         else:
-            self.logger.debug(u"{}: Duplicate Device ID ({})".format(device.name, device.id))
+            self.logger.debug(f"{device.name}: Duplicate Device ID ({device.id})")
 
     ########################################
     # Terminate communication
     #
     def deviceStopComm(self, device):
         if device.id in self.listeners:
-            self.logger.debug(u"{}: Stopping {} device ({})".format(device.name, device.deviceTypeId, device.id))
+            self.logger.debug(f"{device.name}: Stopping {device.deviceTypeId} device ({device.id})")
             self.listeners[device.id].close()
             del self.listeners[device.id]
         else:
-            self.logger.debug(u"{}: Unknown Device ID: {}".format(device.name, device.id))
-        
-
-    ########################################
-    def validateDeviceConfigUi(self, valuesDict, typeId, devId):
-        errorsDict = indigo.Dict()
-        if len(errorsDict) > 0:
-            return (False, valuesDict, errorsDict)
-        return (True, valuesDict)
-
-    ########################################
-    def validateActionConfigUi(self, valuesDict, typeId, devId):
-        errorsDict = indigo.Dict()
-        try:
-            pass
-        except:
-            pass
-        if len(errorsDict) > 0:
-            return (False, valuesDict, errorsDict)
-        return (True, valuesDict)
+            self.logger.debug(f"{device.name}: Unknown Device ID: {device.id}")
 
     ########################################
     # Menu Methods
     ########################################
     
     def pickUDPDevice(self, filter=None, valuesDict=None, typeId=0, targetId=0):
-        retList =[(kAnyDevice, "Any")]
+        retList = [(kAnyDevice, "Any")]
         for dev in indigo.devices.iter("self"):
-            if (dev.deviceTypeId == "udpListener"):
+            if dev.deviceTypeId == "udpListener":
                 retList.append((dev.id,dev.name))
         retList.sort(key=lambda tup: tup[1])
         return retList
-
-
-

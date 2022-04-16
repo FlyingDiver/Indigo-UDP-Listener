@@ -100,3 +100,9 @@ ENV/
 # mypy
 .mypy_cache/
 /sender.py
+
+.DS_Store
+
+.github/
+
+UDP Listener.indigoPlugin/.idea/
