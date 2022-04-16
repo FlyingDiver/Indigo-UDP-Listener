@@ -106,3 +106,5 @@ ENV/
 .github/
 
 UDP Listener.indigoPlugin/.idea/
+
+UDP Listener.indigoPlugin.zip
