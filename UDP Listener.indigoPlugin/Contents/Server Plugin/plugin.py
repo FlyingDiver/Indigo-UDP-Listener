@@ -90,8 +90,17 @@ class Plugin(indigo.PluginBase):
                         else:
                             try:
                                 message = data.decode('utf-8')
-                            except (Exception, ):
-                                message = ":".join(f"{ord(c):02x}" for c in data)
+                            except Exception as err:
+                                self.logger.debug(f"{device.name}: Error decoding string message: {err}")
+                                message = None
+
+                            if message is None:
+                                try:
+                                    message = ":".join(f"{c:02x}" for c in data)
+                                except Exception as err:
+                                    self.logger.debug(f"{device.name}: Error formatting bytestring message: {err}")
+                                    message = None
+
                             self.logger.debug(f"{device.name}: UDP msg from: {addr}, data: {message}")
                             
                             stateList = [

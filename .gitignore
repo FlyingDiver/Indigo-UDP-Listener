@@ -108,3 +108,5 @@ ENV/
 UDP Listener.indigoPlugin/.idea/
 
 UDP Listener.indigoPlugin.zip
+
+.idea/
